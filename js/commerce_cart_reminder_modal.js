@@ -26,8 +26,8 @@
       var reminderCartModal = Drupal.dialog(content, {
         title: modal_title,
         dialogClass: 'commerce-cart-reminder-dialog',
-        width: 745,
-        height: 375,
+        width: 600,
+        height: 400,
         maxWidth: '95%',
         autoResize: true,
         resizable: false,
@@ -53,14 +53,16 @@
           }
         ]
       });
-      reminderCartModal.showModal();
+
+      setTimeout(function () {
+        reminderCartModal.showModal();
+      }, 2000);
     }
   }
 
 
   function updateCookieCount() {
     var cookie = getCookie("commerce-cart-reminder");
-    console.log(cookie);
     if (cookie != undefined) {
       var jsonCookie = JSON.parse(cookie);
       for(var i = 0; i < jsonCookie.length; i++) {

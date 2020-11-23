@@ -132,15 +132,16 @@ function commerce_cart_reminder_modal_content($carts, $config) {
       if ($variation = $order_item->getPurchasedEntity()) {
         $view_mode = $config->get('product_variation_view_mode');
         if ($view_mode == 'just_title') {
-          $content .= $variation->getTitle() . '</br>';
+          $variation_html = $variation->getTitle() . '</br>';
         }
         else {
           $view_builder = \Drupal::entityTypeManager()->getViewBuilder('commerce_product_variation');
           $variation_html = \Drupal::service('renderer')->renderPlain($view_builder->view($variation, $view_mode));
-          \Drupal::moduleHandler()->alter('commerce_cart_reminder_modal_variation_html', $variation, $variation_html);
-
-          $content .= $variation_html;
         }
+
+        // Let other module change the variation html.
+        \Drupal::moduleHandler()->alter('commerce_cart_reminder_modal_variation_html', $variation, $variation_html);
+        $content .= $variation_html;
       }
     }
   }

@@ -1,0 +1,151 @@
+<?php
+
+use Drupal\Core\Render\Markup;
+
+/**
+ * Get carts.
+ */
+function commerce_cart_reminder_get_carts() {
+  /** @var \Drupal\commerce_order\Entity\OrderInterface[] $carts */
+  $carts = \Drupal::service('commerce_cart.cart_provider')->getCarts();
+  $carts = array_filter($carts, function ($cart) {
+    /** @var \Drupal\commerce_order\Entity\OrderInterface $cart */
+    return $cart->hasItems() && $cart->cart->value;
+  });
+
+  return $carts;
+}
+
+/**
+ * Implements template_preprocess_html().
+ */
+function commerce_cart_reminder_preprocess_html(&$variables) {
+
+  // TODO: Get from configuration
+  $carts = commerce_cart_reminder_get_carts();
+
+  $userCart = [];
+  if (!empty($carts)) {
+    // Add a class to body.
+    $variables['attributes']['class'][] = 'has-cart';
+    $config = \Drupal::config('commerce_cart_reminder.config');
+
+    if (isset($_COOKIE['commerce-cart-reminder']) && !empty($_COOKIE['commerce-cart-reminder'])) {
+      // Cookie is already set.
+      // Let's check if a modal should be shown.
+      $show_modal = FALSE;
+      if ($cookie = json_decode($_COOKIE['commerce-cart-reminder'])) {
+
+        $first_time = $config->get('first_modal_appear') ?? 0;
+        $second_time = $config->get('second_modal_appear') ?? 0;
+        $third_time = $config->get('third_modal_appear') ?? 0;
+
+        $show_modal = FALSE;
+        foreach ($cookie as $cookie_cart) {
+          if ($cookie_cart->count == 0 && $first_time) {
+            if ((time() - $cookie_cart->created) > $first_time) {
+              $show_modal = TRUE;
+            }
+          }
+          elseif($cookie_cart->count == 1 && $second_time) {
+            if ((time() - $cookie_cart->created) > $second_time) {
+              $show_modal = TRUE;
+            }
+          }
+          elseif($cookie_cart->count == 2 && $third_time) {
+            if ((time() - $cookie_cart->created) > $third_time) {
+              $show_modal = TRUE;
+            }
+          }
+          else {
+            // Count > 2. Do not show the modal anymore.
+            $show_modal = FALSE;
+          }
+        }
+        if ($show_modal) {
+          $variables['#attached']['library'][] = 'commerce_cart_reminder/modal';
+          $variables['#attached']['drupalSettings']['commerce_cart_reminder']['modal_title'] = $config->get('modal_title');
+          $variables['#attached']['drupalSettings']['commerce_cart_reminder']['view_cart_text'] = $config->get('view_cart_text');
+          $variables['#attached']['drupalSettings']['commerce_cart_reminder']['close_modal_text'] = $config->get('close_modal_text');
+
+          $modal_content = commerce_cart_reminder_modal_content($carts, $config);
+          $variables['#attached']['drupalSettings']['commerce_cart_reminder']['modal_content'] = $modal_content;
+        }
+      }
+    }
+
+    else {
+      $set_cookie = TRUE;
+      // We should set the cookie with elements
+      foreach ($carts as $cart_id => $cart) {
+        // Check Limit by sku settings.
+        if ($limit_by_sku = $config->get('limit_by_sku')) {
+          $available_skus = explode(';', $limit_by_sku);
+          $set_cookie = FALSE;
+          foreach ($cart->getItems() as $order_item) {
+            if ($variation = $order_item->getPurchasedEntity()) {
+              if (in_array($variation->getSku(), $available_skus)) {
+                $set_cookie = TRUE;
+                break;
+              }
+            }
+          }
+        }
+
+        if ($set_cookie) {
+          $userCart[] = [
+            'created' => $cart->getCreatedTime(),
+            'cart_id' => $cart_id,
+            'count' => 0,
+          ];
+        }
+      }
+
+      if ($userCart) {
+        // Set the cookie with cart informations.
+        setcookie('commerce-cart-reminder', json_encode($userCart), -1, '/');
+      }
+    }
+  }
+
+  else {
+    if (isset($_COOKIE['commerce-cart-reminder'])) {
+      // Remove cookie.
+      unset($_COOKIE['commerce-cart-reminder']);
+      setcookie('commerce-cart-reminder', '', time() - 3600, '/');
+    }
+  }
+}
+
+/**
+ * Creates modal cart reminder content.
+ */
+function commerce_cart_reminder_modal_content($carts, $config) {
+  $content = '<div class="commerce-reminder-modal-content">';
+
+
+  if ($config->get('intro_text.value')) {
+    $content .= $config->get('intro_text.value');
+  }
+  foreach ($carts as $cart) {
+    foreach ($cart->getItems() as $order_item) {
+      if ($variation = $order_item->getPurchasedEntity()) {
+        $view_mode = $config->get('product_variation_view_mode');
+        if ($view_mode == 'just_title') {
+          $content .= $variation->getTitle() . '</br>';
+        }
+        else {
+          $view_builder = \Drupal::entityTypeManager()->getViewBuilder('commerce_product_variation');
+          $variation_html = \Drupal::service('renderer')->renderPlain($view_builder->view($variation, $view_mode));
+          \Drupal::moduleHandler()->alter('commerce_cart_reminder_modal_variation_html', $variation, $variation_html);
+
+          $content .= $variation_html;
+        }
+      }
+    }
+  }
+
+  $content .= '</div>';
+
+  return $content;
+}

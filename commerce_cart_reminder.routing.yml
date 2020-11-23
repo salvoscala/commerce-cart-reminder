@@ -1,0 +1,7 @@
+commerce_cart_reminder.settings:
+  path: '/admin/config/system/commerce-cart-reminder'
+  defaults:
+    _form:  '\Drupal\commerce_cart_reminder\Form\CommerceCartReminderSettingsForm'
+    _title: 'Commerce cart reminder settings'
+  requirements:
+    _permission: 'configure commerce_cart_reminder'

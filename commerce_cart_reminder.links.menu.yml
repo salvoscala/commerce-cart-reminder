@@ -1,0 +1,6 @@
+# Default menu links for the Geofield Map module.
+commerce_cart_reminder.settings:
+  route_name: commerce_cart_reminder.settings
+  title: 'Commerce Cart Reminder settings'
+  parent: system.admin_config_system
+  description: 'Configure Commerce cart reminder Settings'

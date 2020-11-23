@@ -1,0 +1,15 @@
+modal:
+  js:
+    js/commerce_cart_reminder_modal.js: {}
+  css:
+    theme:
+      css/style.css: {}
+  dependencies:
+    - core/jquery
+    - core/jquery.form
+    - core/drupal
+    - core/drupal.form
+    - core/drupal.ajax
+    - core/drupalSettings
+    - core/drupal.dialog
+    - core/drupal.dialog.ajax

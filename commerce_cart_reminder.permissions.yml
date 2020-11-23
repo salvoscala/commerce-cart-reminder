@@ -1,0 +1,4 @@
+configure commerce_cart_reminder:
+  title: 'Administer Commerce cart reminder Settings'
+  description: 'A custom permission for administer Commerce Cart Recurring settings.'
+  restrict access: TRUE

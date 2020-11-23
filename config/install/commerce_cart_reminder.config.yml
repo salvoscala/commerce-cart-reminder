@@ -1,0 +1,15 @@
+modal_title: 'Cart Reminder'
+first_type: day
+first_value: '1'
+first_modal_appear: 1440
+second_type: day
+second_value: '2'
+second_modal_appear: 2880
+third_type: day
+third_value: '2'
+third_modal_appear: 2880
+product_variation_view_mode: just_title'
+limit_by_sku: ''
+intro_text:
+  value: ''
+  format: basic_html
